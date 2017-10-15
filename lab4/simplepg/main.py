@@ -46,9 +46,11 @@ def point_get_grad_logp_action(theta, ob, action):
     :param action: A vector of size |A|
     :return: A matrix of size |A| * (|S|+1)
     """
-    grad = np.zeros_like(theta)
     "*** YOUR CODE HERE ***"
-    return grad
+    ob_1 = include_bias(ob)
+    mean = theta.dot(ob_1)
+    zs = action - mean
+    return np.outer(zs, ob_1)
 
 
 def point_get_action(theta, ob, rng=np.random):
@@ -112,9 +114,12 @@ def cartpole_get_grad_logp_action(theta, ob, action):
     :param action: An integer
     :return: A matrix of size |A| * (|S|+1)
     """
-    grad = np.zeros_like(theta)
     "*** YOUR CODE HERE ***"
-    return grad
+    a = np.zeros(theta.shape[0])
+    a[action] = 1
+    p = softmax(compute_logits(theta, ob))
+    ob_1 = include_bias(ob)
+    return np.outer(a - p, ob_1)
 
 
 def cartpole_get_action(theta, ob, rng=np.random):
@@ -245,9 +250,9 @@ def main(env_id, batch_size, discount, learning_rate, n_itrs, render, use_baseli
                     matrix of size |A| * (|S|+1) )
                     :return: A tuple, consisting of a scalar and a matrix of size |A| * (|S|+1)
                     """
-                    R_t = 0.
-                    pg_theta = np.zeros_like(theta)
                     "*** YOUR CODE HERE ***"
+                    R_t = discount * R_tplus1 + r_t
+                    pg_theta = get_grad_logp_action(theta, s_t, a_t) * (R_t - b_t)
                     return R_t, pg_theta
 
                 # Test the implementation, but only once
@@ -279,6 +284,8 @@ def main(env_id, batch_size, discount, learning_rate, n_itrs, render, use_baseli
             baselines = np.zeros(len(all_returns))
             for t in range(len(all_returns)):
                 "*** YOUR CODE HERE ***"
+                if len(all_returns[t]) > 0:
+                    baselines[t] = np.mean(all_returns[t])
             return baselines
 
         if use_baseline:
@@ -307,6 +314,10 @@ def main(env_id, batch_size, discount, learning_rate, n_itrs, render, use_baseli
                 d = len(theta.flatten())
                 F = np.zeros((d, d))
                 "*** YOUR CODE HERE ***"
+                for i in range(len(all_actions)):
+                    grads = get_grad_logp_action(theta, all_observations[i], all_actions[i]).flatten()
+                    F += np.outer(grads, grads.T)
+                F /= len(all_actions)
                 return F
 
             def compute_natural_gradient(F, grad, reg=1e-4):
@@ -316,8 +327,9 @@ def main(env_id, batch_size, discount, learning_rate, n_itrs, render, use_baseli
                 :param reg: A scalar
                 :return: A matrix of size |A| * (|S|+1)
                 """
-                natural_grad = np.zeros_like(grad)
                 "*** YOUR CODE HERE ***"
+                F_inv = np.linalg.inv(F + reg * np.eye(*F.shape))
+                natural_grad = F_inv.dot(grad.flatten()).reshape(grad.shape)
                 return natural_grad
 
             def compute_step_size(F, natural_grad, natural_step_size):
@@ -327,8 +339,10 @@ def main(env_id, batch_size, discount, learning_rate, n_itrs, render, use_baseli
                 :param natural_step_size: A scalar
                 :return: A scalar
                 """
-                step_size = 0.
                 "*** YOUR CODE HERE ***"
+                natural_grad = natural_grad.flatten()
+                step_size = np.sqrt(2*natural_step_size/natural_grad.T.dot(F).dot(natural_grad))
+
                 return step_size
 
             test_once(compute_fisher_matrix)
