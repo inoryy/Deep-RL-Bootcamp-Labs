@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 This project was developed by Rocky Duan, Peter Chen, Pieter Abbeel for the Berkeley Deep RL Bootcamp, August 2017. Bootcamp website with slides and lecture videos: https://sites.google.com/view/deep-rl-bootcamp/.
 
@@ -11,8 +13,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 """
 
-
-#!/usr/bin/env python
 #
 # Usage: findport.py 3000 100
 #
